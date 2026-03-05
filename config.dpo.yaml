@@ -1,0 +1,61 @@
+# LocalCodeViber v1.0 — DPO Pair Generation Config
+# Generates chosen/rejected pairs using Aurora Alpha on OpenRouter.
+#
+# Usage:
+#   export OPENROUTER_API_KEY=sk-or-...
+#   python cli.py -c config.dpo.yaml
+
+api:
+  provider: "openrouter"
+  base_url: "https://openrouter.ai/api/v1/chat/completions"
+  model: "openrouter/aurora-alpha"
+  api_key_env: "OPENROUTER_API_KEY"
+  timeout: 120
+
+prompts:
+  source: "prompts/localcodeviber_dpo_prompts.md"
+  limit: 0       # 0 = all prompts
+  shuffle: false
+
+workspace:
+  base_dir: "sandbox"
+  cleanup: true
+  preserve_on_error: true
+
+agent:
+  max_turns: 20
+  tools_enabled:
+    - read_file
+    - write_file
+    - edit_file
+    - list_directory
+    - search_code
+    - run_command
+  # system_prompt is intentionally omitted here —
+  # DPO mode overrides it with chosen/rejected prompts automatically
+
+# ── DPO configuration ─────────────────────────────────────────────────────────
+dpo:
+  enabled: true
+
+  # Lower temperature = more decisive, committed tool use
+  chosen_temperature: 0.6
+
+  # Higher temperature = more varied hesitation patterns
+  rejected_temperature: 0.85
+
+  # Override system prompts here if you want to customise them.
+  # If omitted, the defaults in generator.py are used.
+  # chosen_system_prompt: |
+  #   You are an elite agentic coding assistant...
+  # rejected_system_prompt: |
+  #   You are a coding assistant...
+
+output:
+  dataset_file: "datasets/localcodeviber_dpo_pairs.jsonl"
+  error_dataset_file: "datasets/localcodeviber_dpo_errors.jsonl"
+  append_mode: true
+
+processing:
+  concurrency: 10   # Each prompt spawns 2 sessions — effective API concurrency is 2x this
+  resume: true
