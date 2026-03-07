@@ -136,11 +136,7 @@ def load_prompts(path: Path) -> List[str]:
             unique_prompts.append(normalized)
         return unique_prompts
 
-    if suffix == ".md":
-        text = path.read_text(encoding="utf-8").strip()
-        return [text] if text else []
-
-    if suffix == ".txt":
+    if suffix in {".md", ".txt"}:
         return _load_text_prompts(path)
 
     raise ValueError(f"Unsupported prompt source type: {suffix}")

@@ -1,0 +1,55 @@
+# config.minimax.yaml — Minimax M2.5 · 1 000-example SFT dataset
+#
+# Usage (standalone):
+#   python cli.py -c config.minimax.yaml
+#
+# Usage (parallel with Aurora):
+#   python orchestrator.py --multi config.multi.yaml
+
+api:
+  provider: "openrouter"
+  base_url: "https://openrouter.ai/api/v1/chat/completions"
+  model: "minimax/minimax-m2.5"
+  api_key_env: "OPENROUTER_API_KEY"
+  timeout: 120
+
+prompts:
+  source: "prompts/minimax_prompts.md"
+  limit: 1000
+  shuffle: true
+
+workspace:
+  base_dir: "agentic_workspaces"
+  cleanup: true
+  preserve_on_error: true
+
+agent:
+  max_turns: 30
+
+  tools_enabled:
+    - read_file
+    - write_file
+    - edit_file
+    - list_directory
+    - search_code
+    - run_command
+    - resolve_library_id
+    - get_library_docs
+
+  sandbox:
+    enabled: true
+    image: "python:3.12-slim"
+    timeout: 30
+    memory: "512m"
+    cpus: "1.0"
+    extra_packages: []
+    env: {}
+
+output:
+  dataset_file: "datasets/minimax_m2.5_sft.jsonl"
+  error_dataset_file: "datasets/minimax_m2.5_errors.jsonl"
+  append_mode: true
+
+processing:
+  concurrency: 8
+  resume: true
