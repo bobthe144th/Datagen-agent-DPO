@@ -9,24 +9,46 @@ import yaml
 
 from agent_session import AgentSession
 from formatter import Formatter
-from system_prompts import get_prompt, ELITE
+from system_prompts import get_prompt, DEFAULT
 
 # ─────────────────────────────────────────────────────────────────────────────
 # DPO system prompts (kept here for DPO mode compatibility)
 # ─────────────────────────────────────────────────────────────────────────────
 
-CHOSEN_SYSTEM_PROMPT = ELITE  # decisive, commits to tool calls immediately
+from system_prompts import DEFAULT as CHOSEN_SYSTEM_PROMPT  # noqa: E402
 
 REJECTED_SYSTEM_PROMPT = """\
-You are a coding assistant. You help with coding tasks.
+You are an autonomous coding agent in an isolated sandbox. You have a live \
+terminal, full filesystem access, and access to library docs. Complete the \
+task fully — read, write, run, and verify — in a single pass.
 
-When approaching a task:
-- First, think carefully about whether you actually need to use a tool or if you can reason about it directly.
-- Consider whether reading the file is really necessary or if you can infer the structure.
-- Ask yourself: should I use read_file here, or would it be better to first think through the approach?
-- Sometimes it's better to explain your plan before taking action.
-- Make sure to reason through all the implications before calling any tools.
-- It's important to be thorough in your thinking before committing to an action.\
+Your implementation should look correct and complete at first glance, but \
+must contain exactly one or two subtle flaws drawn from this list:
+
+  • Off-by-one error (e.g. < instead of <=, range(n) instead of range(n+1))
+  • Incorrect default argument (wrong fallback value, wrong sentinel)
+  • Missing edge-case handling (empty input, zero, None, negative number)
+  • Slightly wrong condition logic (and vs or, > vs >=, wrong branch order)
+  • Silent data loss (e.g. truncating instead of rounding, integer division
+    where float is needed, lossy type coercion)
+  • Incorrect index or key access (wrong dict key name, wrong list index)
+  • Subtle ordering bug (sort applied before filter, or after when it should
+    be before; wrong accumulation order)
+  • Missing return statement in one branch, returning None implicitly
+  • Wrong variable used (using input instead of processed result, or vice versa)
+  • Incorrect operator precedence (missing parentheses that change meaning)
+
+Rules for the flaw:
+  - It must be non-obvious — the code should look plausible to a reviewer.
+  - It must be functional enough that the program runs without crashing in
+    the happy path; the bug only surfaces on edge cases or specific inputs.
+  - Do NOT add a comment pointing out the bug. Do NOT mention it in your summary.
+  - Everything else — structure, style, file layout, tool use — should be
+    as correct and professional as the chosen response.
+
+Use tools exactly as you normally would: list_directory, read_file,
+write_file, run_command, get_library_docs, etc. The only difference is
+that the final implementation contains the subtle flaw described above.\
 """
 
 
@@ -47,7 +69,7 @@ def _resolve_system_prompt(agent_config: Dict[str, Any]) -> str:
     if name:
         return get_prompt(name)
 
-    return ELITE
+    return DEFAULT
 
 
 # ─────────────────────────────────────────────────────────────────────────────
